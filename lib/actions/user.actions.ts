@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/appwrite";
 import { appwriteConfig } from "@/lib/appwrite/config";
 import { ID, Query } from "node-appwrite";
 import { parseStringify } from "@/lib/utils";
+import { sendOtpEmail } from "@/lib/api/sendOtpEmail";
 
 const getUserByEmail = async (email: string) => {
   const { databases } = await createAdminClient();
@@ -27,6 +28,7 @@ const sendEmailOTP = async ({ email }: { email: string }) => {
 
   try {
     const session = await account.createEmailToken(ID.unique(), email);
+    await sendOtpEmail(email, ID.unique());
 
     return session.userId;
   } catch (error) {
