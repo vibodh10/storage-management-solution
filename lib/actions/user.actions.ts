@@ -9,6 +9,8 @@ import { parseStringify } from "@/lib/utils";
 const getUserByEmail = async (email: string) => {
   const { databases } = await createAdminClient();
 
+  const user = await databases.get(appwriteConfig.databaseId); // throws if not logged in
+  console.log("Current user:", user);
   const result = await databases.listDocuments(
     appwriteConfig.databaseId,
     appwriteConfig.usersCollectionId,
