@@ -7,7 +7,9 @@ import { cn, convertFileToUrl, getFileType } from "@/lib/utils";
 import Image from "next/image";
 import Thumbnail from "@/components/Thumbnail";
 import { MAX_FILE_SIZE } from "@/constants";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
+import { uploadFile } from "@/lib/actions/file.actions";
+import { usePathname } from "next/navigation";
 
 interface Props {
   ownerId: string;
@@ -16,28 +18,45 @@ interface Props {
 }
 
 const FileUploader = ({ ownerId, accountId, className }: Props) => {
-  const { toast } = useToast();
   const [files, setFiles] = useState<File[]>([]);
+  const path = usePathname();
 
-  const onDrop = useCallback(async (acceptedFiles: File[]) => {
-    setFiles(acceptedFiles);
+  const onDrop = useCallback(
+    async (acceptedFiles: File[]) => {
+      setFiles(acceptedFiles);
 
-    const uploadPromises = acceptedFiles.map(async (file) => {
-      if (file.size > MAX_FILE_SIZE) {
-        setFiles((prevFiles) => prevFiles.filter((f) => f.name !== file.name));
+      const uploadPromises = acceptedFiles.map(async (file) => {
+        if (file.size > MAX_FILE_SIZE) {
+          setFiles((prevFiles) =>
+            prevFiles.filter((f) => f.name !== file.name),
+          );
 
-        return toast({
-          description: (
+          return toast(
             <p className="body-2 text-white">
               <span className="font-semibold">{file.name}</span> is too large.
               Max file size is 50MB.
-            </p>
-          ),
-          className: "error-toast",
-        });
-      }
-    });
-  }, []);
+            </p>,
+            {
+              className: "error-toast",
+            },
+          );
+        }
+
+        return uploadFile({ file, ownerId, accountId, path }).then(
+          (uploadedFile) => {
+            if (uploadedFile) {
+              setFiles((prevFiles) =>
+                prevFiles.filter((f) => f.name !== file.name),
+              );
+            }
+          },
+        );
+      });
+
+      await Promise.all(uploadPromises);
+    },
+    [ownerId, accountId, path],
+  );
   const { getRootProps, getInputProps } = useDropzone({ onDrop });
   const handleRemoveFile = (
     e: React.MouseEvent<HTMLImageElement, MouseEvent>,
